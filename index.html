@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Card Maker</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#12042a;font-family:Arial,sans-serif;padding:16px;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+  .form{background:#fff;width:900px;max-width:96vw;border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .form input[type=text]{width:100%;padding:13px;border:2px solid #e8ddf2;border-radius:12px;font-size:16px;outline:none}
+  .row{display:flex;gap:10px}
+  .btn{flex:1;background:#ff2fa0;color:#fff;padding:14px;border:none;border-radius:999px;font-weight:bold;font-size:16px;cursor:pointer;text-align:center}
+  .btn.white{background:#2a0a5e}
+  input[type=file]{display:none}
+  #msg{text-align:center;font-size:14px;color:#ff2fa0;font-weight:bold;min-height:18px}
+  .card{position:relative;width:900px;max-width:96vw;aspect-ratio:4/5;overflow:hidden;border-radius:22px;margin-top:18px;background:#2a0a5e}
+  .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block}
+  .photo-area{position:absolute;left:50%;top:47%;transform:translate(-50%,-50%);width:48%;aspect-ratio:3/4;z-index:5}
+  .glow-1{background:rgba(255,47,160,.18);padding:10px;border-radius:44px;width:100%;height:100%}
+  .glow-2{background:rgba(255,47,160,.35);padding:7px;border-radius:38px;width:100%;height:100%}
+  .frame-pink{background:#ff2fa0;padding:4px;border-radius:32px;width:100%;height:100%}
+  .frame-white{background:#fff;padding:4px;border-radius:28px;width:100%;height:100%}
+  .frame-white img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;border-radius:24px}
+  .name-box{position:absolute;left:0;right:0;bottom:13%;z-index:10;text-align:center;padding:0 20px}
+  .name-box .name{font-size:34px;line-height:1.1;font-weight:900;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.8);word-break:break-word}
+  .name-box .role{margin-top:6px;font-size:20px;line-height:1.2;font-weight:700;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.8)}
+</style>
+</head>
+<body>
+<div class="form">
+  <input type="text" id="nameInput" placeholder="Enter your name" oninput="updateCard()">
+  <input type="text" id="roleInput" placeholder="Enter position - e.g. Media" oninput="updateCard()">
+  <div class="row">
+    <label class="btn" for="photoInput">Choose Photo</label>
+    <input type="file" id="photoInput" accept="image/*">
+    <button class="btn white" id="downloadBtn" onclick="downloadCard()">Download Card</button>
+  </div>
+  <div id="msg"></div>
+</div>
+<div class="card" id="card">
+  <img class="bg" id="bgImg" src="https://i.ibb.co/YF2wcmWw/Whats-App-Image-2026-11-15-at-2-03-15-PM.webp" crossorigin="anonymous">
+  <div class="photo-area">
+    <div class="glow-1"><div class="glow-2"><div class="frame-pink"><div class="frame-white"><img id="userPhoto" src="" style="display:none"></div></div></div></div>
+  </div>
+  <div class="name-box"><div class="name" id="showName"></div><div class="role" id="showRole"></div></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const msgEl = document.getElementById('msg');
+  if(isIOS){ document.getElementById('downloadBtn').textContent = 'Save Card'; }
+  const nameInput=document.getElementById('nameInput');
+  const roleInput=document.getElementById('roleInput');
+  const showName=document.getElementById('showName');
+  const showRole=document.getElementById('showRole');
+  const photoInput=document.getElementById('photoInput');
+  const userPhoto=document.getElementById('userPhoto');
+  const bgImg=document.getElementById('bgImg');
+  bgImg.onerror = function(){ bgImg.style.display='none'; document.getElementById('card').style.background='linear-gradient(180deg,#2a0a5e,#ff2fa0)'; };
+  function updateCard(){
+    const name = nameInput.value.trim();
+    showName.textContent = name;
+    if(name.length > 14){ showName.style.fontSize = '26px'; } else if(name.length > 10){ showName.style.fontSize = '30px'; } else { showName.style.fontSize = '34px'; }
+    const r=roleInput.value.trim();
+    showRole.textContent=r ? 'Position : '+r : '';
+  }
+  photoInput.addEventListener('change',e=>{
+    const f=e.target.files[0]; if(!f) return;
+    msgEl.textContent='';
+    if(f.name.toLowerCase().endsWith('.heic') || f.type === 'image/heic'){ msgEl.textContent = 'Please choose JPG photo, HEIC may not work on iPhone'; }
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const img = new Image();
+      img.onload = function(){
+        let w = img.width, h = img.height;
+        if(isIOS){
+          const maxSize = 5000;
+          if(w > maxSize || h > maxSize){
+            const ratio = Math.min(maxSize/w, maxSize/h);
+            w = Math.floor(w*ratio); h = Math.floor(h*ratio);
+          }
+        }
+        const c = document.createElement('canvas');
+        c.width=w; c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        userPhoto.src = isIOS ? c.toDataURL('image/jpeg', 0.95) : c.toDataURL('image/png');
+        userPhoto.style.display='block';
+      };
+      img.onerror = function(){ msgEl.textContent = 'This photo format is not supported, please choose another JPG photo'; };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(f);
+  });
+  function waitForImage(img){
+    return new Promise(res=>{
+      if(!img.src || img.complete && img.naturalWidth>0) return res();
+      img.onload = ()=>res();
+      img.onerror = ()=>res();
+      setTimeout(res, 2000);
+    });
+  }
+  async function downloadCard(){
+    let iosWindow = null;
+    if(isIOS){ msgEl.textContent = 'Creating your card, please wait...'; iosWindow = window.open('', '_blank'); }
+    await document.fonts.ready;
+    await waitForImage(userPhoto);
+    await waitForImage(bgImg);
+    await new Promise(r=>setTimeout(r,400));
+    const scale = isIOS ? 2.5 : 2;
+    html2canvas(document.getElementById('card'),{scale:scale,useCORS:true,allowTaint:true,backgroundColor:null}).then(c=>{
+      if(isIOS){
+        c.toBlob(async (blob)=>{
+          const file = new File([blob], 'card.png', {type:'image/png'});
+          if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+            try{ if(iosWindow) iosWindow.close(); await navigator.share({files:[file]}); msgEl.textContent = ''; return; }catch(err){}
+          }
+          const url = URL.createObjectURL(blob);
+          if(iosWindow){ iosWindow.location.href = url; iosWindow.document.write('<p style="text-align:center;font-family:Arial">Long press on image and Save to Photos</p>'); } else { window.open(url, '_blank'); }
+          msgEl.textContent = 'Long press on image and Save to Photos';
+        }, 'image/png');
+      } else {
+        const a=document.createElement('a'); a.download='card.png'; a.href=c.toDataURL('image/png'); a.click();
+      }
+    }).catch(err=>{ msgEl.textContent = 'Please try again'; if(iosWindow) iosWindow.close(); });
+  }
+  updateCard();
+</script>
+</body>
+</html>
